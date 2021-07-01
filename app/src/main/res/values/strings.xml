@@ -1,0 +1,16 @@
+<resources>
+    <string name="app_name">LiveDataDemo</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+
+    <string name="moment_list">动态列表</string>
+    <string name="moment_content">刚刚在B站发表了最新一期的视频讲解，感兴趣的小伙伴可前往查阅</string>
+
+    <string name="tip_of_enter_moment">请输入动态</string>
+    <string name="save">保存</string>
+
+    <string name="tip_child">温馨提示：如想在 Parent Fragment 中控制 Child Fragment 之间的跳转，那么跳转代码请仍旧在 Child Fragment 内部写（使用 NavHostFragment.findNavController( thisFragment ).navigate），然后 Parent Fragment 通过 SharedViewModel + UnPeekLiveData 等方式从外部间接通知 Child Fragment 执行跳转代码。</string>
+
+    <string name="debug_fragment_databinding_warning">Debug 提示：此 Fragment 未遵循 DataBinding 严格模式，存在 视图调用的 Null 安全风险</string>
+    <string name="debug_activity_databinding_warning">Debug 提示：此 Activity 未遵循 DataBinding 严格模式，存在 视图调用的 Null 安全风险</string>
+</resources>

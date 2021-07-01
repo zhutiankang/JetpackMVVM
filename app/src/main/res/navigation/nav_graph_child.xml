@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph_child"
+    app:startDestination="@id/childAFragment">
+
+    <fragment
+        android:id="@+id/childAFragment"
+        android:name="com.example.livedatademo.ui.ChildAFragment"
+        android:label="fragment_child_a"
+        tools:layout="@layout/fragment_child_a" >
+        <action
+            android:id="@+id/action_childAFragment_to_childCFragment"
+            app:destination="@id/childCFragment"
+            app:enterAnim="@anim/h_fragment_enter"
+            app:exitAnim="@anim/h_fragment_exit"
+            app:popEnterAnim="@anim/h_fragment_pop_enter"
+            app:popExitAnim="@anim/h_fragment_pop_exit"/>
+        <action
+            android:id="@+id/action_childAFragment_to_childBFragment"
+            app:destination="@id/childBFragment"
+            app:enterAnim="@anim/h_fragment_enter"
+            app:exitAnim="@anim/h_fragment_exit"
+            app:popEnterAnim="@anim/h_fragment_pop_enter"
+            app:popExitAnim="@anim/h_fragment_pop_exit"/>
+    </fragment>
+    <fragment
+        android:id="@+id/childBFragment"
+        android:name="com.example.livedatademo.ui.ChildBFragment"
+        android:label="fragment_child_b"
+        tools:layout="@layout/fragment_child_b" >
+        <action
+            android:id="@+id/action_childBFragment_to_childCFragment"
+            app:destination="@id/childCFragment"
+            app:enterAnim="@anim/h_fragment_enter"
+            app:exitAnim="@anim/h_fragment_exit"
+            app:popEnterAnim="@anim/h_fragment_pop_enter"
+            app:popExitAnim="@anim/h_fragment_pop_exit"/>
+    </fragment>
+    <fragment
+        android:id="@+id/childCFragment"
+        android:name="com.example.livedatademo.ui.ChildCFragment"
+        android:label="fragment_child_c"
+        tools:layout="@layout/fragment_child_c" />
+</navigation>
