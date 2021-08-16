@@ -33,7 +33,9 @@ import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
 
 
-
+/**
+ * @author zhutiankang
+ */
 public abstract class BaseFragment extends DataBindingFragment {
 
     private ViewModelProvider mFragmentProvider;

@@ -37,7 +37,9 @@ import androidx.lifecycle.ViewModel;
 import androidx.lifecycle.ViewModelProvider;
 
 
-
+/**
+ * @author zhutiankang
+ */
 public abstract class BaseActivity extends DataBindingActivity {
 
     private ViewModelProvider mActivityProvider;
