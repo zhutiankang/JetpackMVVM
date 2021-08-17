@@ -94,7 +94,6 @@ public final class LiveDataManager {
         liveData.removeObserver(observer);
     }
 
-    // 非粘性事件 只能通过setValue发送
     public <ValueType> void setValue(final @Alias String alias, final ValueType value) {
         final UnPeekLiveData<ValueType> liveData = (UnPeekLiveData<ValueType>) liveDataMap.get(alias);
         if (liveData == null) {

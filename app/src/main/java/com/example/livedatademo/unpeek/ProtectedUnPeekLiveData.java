@@ -1,16 +1,22 @@
 package com.example.livedatademo.unpeek;
 
-import android.util.Log;
+import android.text.TextUtils;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import androidx.annotation.NonNull;
 import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.Observer;
 
-/**引入 Observer 代理类的设计，
+/**
+ * V7 版源码相比于 V6 版的改进之处在于：
+ * 通过在 "代理类/包装类" 中自行维护一个版本号，在 UnPeekLiveData 中维护一个当前版本号，
+ * 分别来在 setValue 和 Observe 的时机来改变和对齐版本号，
+ * 如此使得无需另外管理一个 Observer map，从而进一步规避了内存管理的问题，
+ * 同时也是继 V6 版源码以来，最简的源码设计，方便阅读理解和后续修改。
+ * 引入 Observer 代理类的设计，
  * 这使得在旋屏重建时，无需通过反射方式跟踪和复用基类 Map 中的 Observer，
  * 转而通过 removeObserver 的方式来自动移除和在页面重建后重建新的 Observer，
  * <p>
@@ -30,82 +36,42 @@ import androidx.lifecycle.Observer;
  */
 public class ProtectedUnPeekLiveData<T> extends LiveData<T> {
 
-  private final static String TAG = "V6Test";
+  private final static int START_VERSION = -1;
+
+  private final AtomicInteger currentVersion = new AtomicInteger(START_VERSION);
 
   protected boolean isAllowNullValue;
-
-  private final ConcurrentHashMap<Observer<? super T>, Boolean> observerStateMap = new ConcurrentHashMap();
-
-  private final ConcurrentHashMap<Observer<? super T>, Observer<? super T>> observerProxyMap = new ConcurrentHashMap();
 
   /**
    * TODO 当 liveData 用作 event 用途时，可使用该方法来观察 "生命周期敏感" 的非粘性消息
    *
    * state 是可变且私用的，event 是只读且公用的，
    * state 的倒灌是应景的，event 倒灌是不符预期的，
-   * 一次性事件，在页面创建之前数据扔掉，防止数据倒灌
+   * 一次性事件，在页面创建之前数据扔掉，防止数据倒灌  不setvalue休想接到数据
+   * LiveData 的生存期长于任何一个 Fragment（假设通信双方是 Fragment）：当二级 Fragment 出栈时，LiveData 实例仍存在。
    *
-   * @param owner
+   * 另一方面，LiveData 本身是被设计为粘性事件的，也即，一旦 LiveData 中持有数据，那么在观察者订阅该 LiveData 时 observe，会被推送最后一次数据。
+   * 那么接下来，用户在列表页中 选择另一个 item 点击，并再次跳到详情页时，
+   * 就会因为观察了 “已实例化过、并携带有旧数据” 的 MutableLiveData，而收到它的 “不符合预期” 的推送。
+   *
+   * 这样的设定本身也符合 LiveData 的常用场景 —— 比如 在页面重建时，自动推送最后一次数据，而不必重新去向后台请求。
+   * 只不过，这个特性在 “页面间通信” 场景下，就是致命的灾难
+   * @param owner activity 传入 this，fragment 建议传入 getViewLifecycleOwner
    * @param observer
    */
   @Override
   public void observe(@NonNull LifecycleOwner owner, @NonNull Observer<? super T> observer) {
-    Observer<? super T> observer1 = getObserverProxy(observer);
-    if (observer1 != null) {
-      super.observe(owner, observer1);
-    }
+    super.observe(owner, createObserverWrapper(observer, currentVersion.get()));
   }
 
   /**
    * TODO 当 liveData 用作 event 用途时，可使用该方法来观察 "生命周期不敏感" 的非粘性消息
    *
-   * state 是可变且私用的，event 是只读且公用的，
-   * state 的倒灌是应景的，event 倒灌是不符预期的，
-   *
-   *
    * @param observer
    */
   @Override
   public void observeForever(@NonNull Observer<? super T> observer) {
-    Observer<? super T> observer1 = getObserverProxy(observer);
-    if (observer1 != null) {
-      super.observeForever(observer1);
-    }
-  }
-
-  private Observer<? super T> getObserverProxy(Observer<? super T> observer) {
-    if (observerStateMap.containsKey(observer)) {
-      Log.d(TAG, "observe repeatedly, observer has been attached to owner");
-      return null;
-    } else {
-      observerStateMap.put(observer, false);
-      ObserverProxy proxy = new ObserverProxy(observer);
-      observerProxyMap.put(observer, proxy);
-      return proxy;
-    }
-  }
-
-  private class ObserverProxy implements Observer<T> {
-
-    private final Observer<? super T> target;
-
-    public ObserverProxy(Observer<? super T> target) {
-      this.target = target;
-    }
-
-    public Observer<? super T> getTarget() {
-      return target;
-    }
-
-    @Override
-    public void onChanged(T t) {
-      if (observerStateMap.get(target) != null && observerStateMap.get(target)) {
-        observerStateMap.put(target, false);
-        if (t != null || isAllowNullValue) {
-          target.onChanged(t);
-        }
-      }
-    }
+    super.observeForever(createObserverForeverWrapper(observer, currentVersion.get()));
   }
 
   /**
@@ -116,7 +82,7 @@ public class ProtectedUnPeekLiveData<T> extends LiveData<T> {
    *
    * 自动接收 自动分发 会产生数据倒灌，使用之前的旧数据
    * 当数据在非活跃时更新，observer不会接收到。变为活跃时 将自动接收前面最新的数据。
-   * @param owner
+   * @param owner activity 传入 this，fragment 建议传入 getViewLifecycleOwner
    * @param observer
    */
   /**
@@ -128,7 +94,7 @@ public class ProtectedUnPeekLiveData<T> extends LiveData<T> {
    * @param observer 接收事件的observer
    */
   public void observeSticky(LifecycleOwner owner, Observer<T> observer) {
-    super.observe(owner, observer);
+    super.observe(owner, createObserverWrapper(observer, START_VERSION));
   }
 
   /**
@@ -141,38 +107,92 @@ public class ProtectedUnPeekLiveData<T> extends LiveData<T> {
    * @param observer
    */
   public void observeStickyForever(Observer<T> observer) {
-    super.observeForever(observer);
+    super.observeForever(createObserverForeverWrapper(observer, START_VERSION));
   }
 
+  /**
+   * TODO tip：只需重写 setValue
+   * postValue 最终还是会经过这里
+   *
+   * @param value value
+   */
   @Override
   protected void setValue(T value) {
-    if (value != null || isAllowNullValue) {
-      for (Map.Entry<Observer<? super T>, Boolean> entry : observerStateMap.entrySet()) {
-        entry.setValue(true);
+    currentVersion.getAndIncrement();
+    super.setValue(value);
+  }
+
+  /**
+   * TODO tip：
+   * 1.添加一个包装类，自己维护一个版本号判断，用于无需 map 的帮助也能逐一判断消费情况
+   * 2.重写 equals 方法和 hashCode，在用于手动 removeObserver 时，忽略版本号的变化引起的变化
+   */
+  class ObserverWrapper implements Observer<T> {
+    private final Observer<? super T> mObserver;
+    private int mVersion = START_VERSION;
+    private boolean mIsForever;
+
+    public ObserverWrapper(@NonNull Observer<? super T> observer, int version, boolean isForever) {
+      this(observer, version);
+      this.mIsForever = isForever;
+    }
+
+    public ObserverWrapper(@NonNull Observer<? super T> observer, int version) {
+      this.mObserver = observer;
+      this.mVersion = version;
+    }
+
+    @Override
+    public void onChanged(T t) {
+      if (currentVersion.get() > mVersion && (t != null || isAllowNullValue)) {
+        mObserver.onChanged(t);
       }
-      super.setValue(value);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      ObserverWrapper that = (ObserverWrapper) o;
+      return Objects.equals(mObserver, that.mObserver);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(mObserver);
+    }
+
+    @NonNull
+    @Override
+    public String toString() {
+      return mIsForever ? "IS_FOREVER" : "";
     }
   }
 
   @Override
   public void removeObserver(@NonNull Observer<? super T> observer) {
-    Observer<? super T> proxy;
-    Observer<? super T> target;
-    if (observer instanceof ProtectedUnPeekLiveData.ObserverProxy) {
-      proxy = observer;
-      target = ((ObserverProxy) observer).getTarget();
+    if (TextUtils.isEmpty(observer.toString())) {
+      super.removeObserver(observer);
     } else {
-      proxy = observerProxyMap.get(observer);
-      target = (proxy != null) ? observer : null;
-    }
-    if (proxy != null && target != null) {
-      observerProxyMap.remove(target);
-      observerStateMap.remove(target);
-      super.removeObserver(proxy);
+      super.removeObserver(createObserverWrapper(observer, -1));
     }
   }
 
+  private ObserverWrapper createObserverForeverWrapper(@NonNull Observer<? super T> observer, int version) {
+    return new ObserverWrapper(observer, version, true);
+  }
+
+  private ObserverWrapper createObserverWrapper(@NonNull Observer<? super T> observer, int version) {
+    return new ObserverWrapper(observer, version);
+  }
+
   /**
+   * TODO tip：
    * 手动将消息从内存中清空，
    * 以免无用消息随着 SharedViewModel 的长时间驻留而导致内存溢出的发生。
    */

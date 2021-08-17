@@ -21,6 +21,7 @@ public class UnPeekLiveData<T> extends ProtectedUnPeekLiveData<T> {
 
     /**
      * 是否允许传入 null value
+     * 允许value为空通知 默认为null不通知
      */
     private boolean isAllowNullValue;
 
