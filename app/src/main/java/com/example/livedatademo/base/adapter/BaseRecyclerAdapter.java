@@ -11,7 +11,7 @@ import androidx.lifecycle.ViewModel;
 import androidx.recyclerview.widget.RecyclerView;
 
 
-public abstract class BaseRecyclerAdapter<RecyclerVM extends ViewModel> extends RecyclerView.Adapter<BaseRecyclerAdapter.ViewHolder> {
+public abstract class BaseRecyclerAdapter<RecyclerVM extends ViewModel> extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     /**
      * ViewModel.
      */
@@ -28,15 +28,30 @@ public abstract class BaseRecyclerAdapter<RecyclerVM extends ViewModel> extends 
 
     @NonNull
     @Override
-    public final ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+    public final RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         final View view = onGenerateRootView(parent, viewType);
         final ViewDataBinding binding = DataBindingUtil.bind(view);
         onViewCreated(binding);
-        return new ViewHolder(binding.getRoot());
+        BaseViewHolder holder = new BaseViewHolder(binding.getRoot());
+        holder.itemView.setOnClickListener(v -> {
+            if (mItemClickListener != null) {
+                int position = holder.getBindingAdapterPosition();
+                mItemClickListener.onItemClick(position);
+            }
+        });
+        holder.itemView.setOnLongClickListener(v -> {
+            if (mItemLongClickListener != null) {
+                int position = holder.getBindingAdapterPosition();
+                mItemLongClickListener.onItemLongClick( position);
+                return true;
+            }
+            return false;
+        });
+        return holder;
     }
 
     @Override
-    public final void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+    public final void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         final ViewDataBinding binding = DataBindingUtil.getBinding(holder.itemView);
         if (binding != null) {
             onSetData(binding, position);
@@ -95,8 +110,9 @@ public abstract class BaseRecyclerAdapter<RecyclerVM extends ViewModel> extends 
      *  final AppInfo appInfo = viewModel.getLocalApp(position);
      *         if (appInfo == null) {
      *             return;
-     *         }
+     *         }//数据
      *         binding.setVariable(BR.localAppInfo, appInfo);
+     *         //操作
      *         binding.setVariable(BR.viewModel, viewModel);
      *         binding.setVariable(BR.position, position);
      *         binding.getRoot().setOnClickListener(v -> {});
@@ -145,13 +161,13 @@ public abstract class BaseRecyclerAdapter<RecyclerVM extends ViewModel> extends 
     protected abstract RecyclerView.LayoutManager onCreateLayoutManager(Context context);
 
 
-    protected final static class ViewHolder extends RecyclerView.ViewHolder {
+    private final static class BaseViewHolder extends RecyclerView.ViewHolder {
         /**
          * Package-private constructor.
          *
          * @param itemView The view of each item.
          */
-        ViewHolder(@NonNull View itemView) {
+        BaseViewHolder(@NonNull View itemView) {
             super(itemView);
         }
     }
