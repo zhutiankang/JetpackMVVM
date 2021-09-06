@@ -1,5 +1,7 @@
 package com.example.livedatademo.unpeek;
 
+import android.text.TextUtils;
+
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -9,7 +11,6 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.Observer;
 
 /**
- * TODO 感谢小伙伴 RebornWolfman 对 UnPeekLiveData 源码的演化做出的贡献，
  * V7 版源码相比于 V6 版的改进之处在于：
  * 通过在 "代理类/包装类" 中自行维护一个版本号，在 UnPeekLiveData 中维护一个当前版本号，
  * 分别来在 setValue 和 Observe 的时机来改变和对齐版本号，
@@ -33,7 +34,7 @@ import androidx.lifecycle.Observer;
  *
  * @author zhutiankang
  */
-public class ProtectedUnPeekLiveData<T> extends LiveData<T> {
+public class ProtectedUnPeekLiveData7_1<T> extends LiveData<T> {
 
   private final static int START_VERSION = -1;
 
@@ -55,7 +56,6 @@ public class ProtectedUnPeekLiveData<T> extends LiveData<T> {
    *
    * 这样的设定本身也符合 LiveData 的常用场景 —— 比如 在页面重建时，自动推送最后一次数据，而不必重新去向后台请求。
    * 只不过，这个特性在 “页面间通信” 场景下，就是致命的灾难
-   *
    * @param owner activity 传入 this，fragment 建议传入 getViewLifecycleOwner
    * @param observer
    */
@@ -71,7 +71,7 @@ public class ProtectedUnPeekLiveData<T> extends LiveData<T> {
    */
   @Override
   public void observeForever(@NonNull Observer<? super T> observer) {
-    super.observeForever(createObserverWrapper(observer, currentVersion.get()));
+    super.observeForever(createObserverForeverWrapper(observer, currentVersion.get()));
   }
 
   /**
@@ -107,7 +107,7 @@ public class ProtectedUnPeekLiveData<T> extends LiveData<T> {
    * @param observer
    */
   public void observeStickyForever(Observer<T> observer) {
-    super.observeForever(createObserverWrapper(observer, START_VERSION));
+    super.observeForever(createObserverForeverWrapper(observer, START_VERSION));
   }
 
   /**
@@ -130,6 +130,12 @@ public class ProtectedUnPeekLiveData<T> extends LiveData<T> {
   class ObserverWrapper implements Observer<T> {
     private final Observer<? super T> mObserver;
     private int mVersion = START_VERSION;
+    private boolean mIsForever;
+
+    public ObserverWrapper(@NonNull Observer<? super T> observer, int version, boolean isForever) {
+      this(observer, version);
+      this.mIsForever = isForever;
+    }
 
     public ObserverWrapper(@NonNull Observer<? super T> observer, int version) {
       this.mObserver = observer;
@@ -160,25 +166,25 @@ public class ProtectedUnPeekLiveData<T> extends LiveData<T> {
     public int hashCode() {
       return Objects.hash(mObserver);
     }
+
+    @NonNull
+    @Override
+    public String toString() {
+      return mIsForever ? "IS_FOREVER" : "";
+    }
   }
 
-  /**
-   * TODO tip：
-   * 通过 ObserveForever 的 Observe，需要记得 remove，不然存在 LiveData 内存泄漏的隐患，
-   * 保险的做法是，在页面的 onDestroy 环节安排 removeObserver 代码，
-   * 当使用 removeObserver(@nonnull final LifecycleOwner owner) 的时候，
-   * 回调过来已经是ObserverWrapper，又封装了一层，导致没有删除掉。
-   * 应该是加一个判断，判断回调当前类是否已经是ObserverWrapper的类型，不是才需要包装删除
-   *
-   * @param observer observeForever 注册的 observer，或 observe 注册的 observerWrapper
-   */
   @Override
   public void removeObserver(@NonNull Observer<? super T> observer) {
-    if (observer.getClass().isAssignableFrom(ObserverWrapper.class)) {
+    if (TextUtils.isEmpty(observer.toString())) {
       super.removeObserver(observer);
     } else {
-      super.removeObserver(createObserverWrapper(observer, START_VERSION));
+      super.removeObserver(createObserverWrapper(observer, -1));
     }
+  }
+
+  private ObserverWrapper createObserverForeverWrapper(@NonNull Observer<? super T> observer, int version) {
+    return new ObserverWrapper(observer, version, true);
   }
 
   private ObserverWrapper createObserverWrapper(@NonNull Observer<? super T> observer, int version) {
