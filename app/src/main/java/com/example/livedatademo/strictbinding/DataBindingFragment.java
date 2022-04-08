@@ -22,6 +22,7 @@ import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.os.Debug;
 import android.util.SparseArray;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -29,6 +30,10 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.example.livedatademo.R;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -56,7 +61,10 @@ public abstract class DataBindingFragment extends Fragment {
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        SimpleDateFormat dateFormat =
+                new SimpleDateFormat("dd_MM_yyyy_hh_mm_ss", Locale.getDefault());
+        String logDate = dateFormat.format(new Date());
+        Debug.startMethodTracing("sample-fragment" + logDate);
         initViewModel();
     }
 
@@ -106,6 +114,7 @@ public abstract class DataBindingFragment extends Fragment {
             binding.setVariable(bindingParams.keyAt(i), bindingParams.valueAt(i));
         }
         mBinding = binding;
+        Debug.stopMethodTracing();
         return binding.getRoot();
     }
 

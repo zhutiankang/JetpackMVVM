@@ -62,6 +62,22 @@ public class ViewPager2Activity extends AppCompatActivity {
         //定义适配器
         myAdapter = new MyAdapter(this, fragments, titls);
         vp2.setAdapter(myAdapter);
+        vp2.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
+            @Override
+            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+                super.onPageScrolled(position, positionOffset, positionOffsetPixels);
+            }
+
+            @Override
+            public void onPageSelected(int position) {
+                super.onPageSelected(position);
+            }
+
+            @Override
+            public void onPageScrollStateChanged(int state) {
+                super.onPageScrollStateChanged(state);
+            }
+        });
 
         //通过TabLayoutMediator 方法参数类型 tablayout   viewpager  new new TabLayoutMediator.TabConfigurationStrategy()
         //tab赋值.settext(集合.get（position）)

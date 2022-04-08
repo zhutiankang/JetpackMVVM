@@ -21,11 +21,17 @@ package com.example.livedatademo.strictbinding;
 import android.content.pm.ApplicationInfo;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.os.Debug;
+import android.os.Trace;
 import android.util.SparseArray;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.example.livedatademo.R;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -65,6 +71,11 @@ public abstract class DataBindingActivity extends AppCompatActivity {
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Trace.beginSection("MainActivity onCreate");
+        SimpleDateFormat dateFormat =
+                new SimpleDateFormat("dd_MM_yyyy_hh_mm_ss", Locale.getDefault());
+        String logDate = dateFormat.format(new Date());
+        Debug.startMethodTracing("sample-activity" + logDate);
 
         initViewModel();
         DataBindingConfig dataBindingConfig = getDataBindingConfig();
@@ -83,6 +94,8 @@ public abstract class DataBindingActivity extends AppCompatActivity {
             binding.setVariable(bindingParams.keyAt(i), bindingParams.valueAt(i));
         }
         mBinding = binding;
+        Debug.stopMethodTracing();
+        Trace.endSection();
     }
 
     public boolean isDebug() {
