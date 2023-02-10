@@ -1,6 +1,5 @@
 package com.example.livedatademo.ui;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.widget.Toast;
@@ -55,6 +54,14 @@ public class MainActivity extends BaseActivity {
 
         public void toSecondActivity() {
             startActivity(new Intent(MainActivity.this, EditorActivity.class));
+//            SensorAnalyticsApi.getInstance().track("track",null);
+//            SensorAnalyticsApi.getInstance().trackAppClick("trackAppClick","222");
+//            SensorAnalyticsApi.getInstance().trackAppOtherEvent("trackAppOtherEvent",null);
+//            SensorAnalyticsApi.getInstance().login("login");
+//            SensorAnalyticsApi.getInstance().appViewScreenTimeStart("appViewScreenTimeStart");
+//            SensorAnalyticsApi.getInstance().appViewScreenTimeEnd("appViewScreenTimeEnd");
+//            SensorAnalyticsApi.getInstance().appExposureTimeStart("appExposureTimeStart");
+//            SensorAnalyticsApi.getInstance().appExposureTimeEnd("appExposureTimeEnd");
         }
     }
 

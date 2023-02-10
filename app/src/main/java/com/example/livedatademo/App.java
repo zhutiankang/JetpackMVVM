@@ -19,6 +19,7 @@ package com.example.livedatademo;
 import android.app.Application;
 
 import com.example.livedatademo.utils.Utils;
+import com.smartlink.linkanalytics.analytics.SensorAnalyticsApi;
 
 import androidx.annotation.NonNull;
 import androidx.lifecycle.ViewModelStore;
@@ -48,6 +49,7 @@ public class App extends Application implements ViewModelStoreOwner {
         mAppViewModelStore = new ViewModelStore();
 
         Utils.init(this);
+        SensorAnalyticsApi.getInstance().init(this);
     }
 
     @NonNull
